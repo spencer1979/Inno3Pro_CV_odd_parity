@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnoSwitch3-Pro Constant Voltage Calculation</title>
+</head>
+<body>
+
+    <h1>InnoSwitch3-Pro Constant Voltage Calculation</h1>
+
+    <form id="valueForm">
+        <label for="inputValue">Enter a value of Constant Voltage (between 3V and 24V):</label>
+        <input type="number" id="inputValue" name="inputValue" min="3" max="24" step="0.1" required>
+        <button type="button" onclick="calculateValue()">Calculate</button>
+    </form>
+    
+    <label id="inputDisplay"></label>
+    <label id="lowByteResult"></label>
+    <label id="highByteResult"></label>
+
+    <script>
+      
+
+        function calculateValue() {
+            // Get the input value
+            var inputValue = parseFloat(document.getElementById("inputValue").value);
+            // Multiply the input value by 100
+            var inputValueMultiplied = inputValue * 100;
+            // Convert to hexadecimal and ensure it has 4 digits
+            var hexValue = inputValueMultiplied.toString(16).toUpperCase().padStart(4, '0');
+
+         
+            if (inputValueMultiplied >= 300 && inputValueMultiplied <= 2400) {
+                   // Display the input value in a label in both decimal and hexadecimal formats
+                document.getElementById("inputDisplay").innerHTML =
+                "Input Value (DEC): " + inputValueMultiplied + "  (10mV/LSB)" +
+                "<br>Convert to HEX: 0x" + hexValue + "<br>Command Address :0x10";
+
+                InnoProBase_Encode_Buffer_Parity(inputValueMultiplied);
+                // Display the results
+               
+               
+            } else {
+                // Display an error message if the input value is outside the valid range
+                document.getElementById("lowByteResult").innerHTML = "";
+                document.getElementById("highByteResult").innerHTML = "Please enter a value between 3 and 24.";
+            }
+        }
+
+        function InnoProBase_Encode_Buffer_Parity(u16Temp) {
+            let u16TempMsb = 0;
+            let u8ConvertedMsb = 0;
+            let u8ConvertedLsb = 0;
+        
+            // Clears Bit 0-6 and Shift the remaining to left by 1
+            // The 7th Bit is used for Parity Purposes
+            // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x300
+            u16TempMsb = (u16Temp & 0xFF80) << 1;
+            console.log( "u16TempMsb:" +  u16TempMsb.toString(16)  );
+            // Begin MSB Extraction
+            // From 0x300, Returns 0x03
+            u8ConvertedMsb = (u16TempMsb & 0xFF00) >> 8;
+            console.log( "u8ConvertedMsb:"+ u8ConvertedMsb.toString(16)   );
+            // Check Odd Parity and Fill the MSB buffer
+            if (calculateOddParity(u8ConvertedMsb)) {
+                // No of Zero is Odd
+              console.log( "u8ConvertedMsb No of Zero is Odd :"+ u8ConvertedMsb.toString(16)  );
+              document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : 0x" + u8ConvertedMsb.toString(16).toUpperCase().padStart(2,"0") ;
+
+            } else {
+                // No of Zero is Even
+              console.log( "u8ConvertedMsb No of Zero is Odd :"+ setBit(u8ConvertedMsb, 7).toString(16).toUpperCase()  );
+              document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : 0x" +setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2,"0") ;
+            
+            }
+
+            // Clears 7th Bit, This is used for parity purposes
+            // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x74
+            u8ConvertedLsb = u16Temp & 0x7F;
+
+            // Check Odd Parity and Fill the LSB buffer
+            if (calculateOddParity(u8ConvertedLsb)) {
+                // No of Zero is Odd
+             
+                console.log( "u8ConvertedMsb No of Zero is Odd :"+ u8ConvertedLsb.toString(16)  );
+                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : 0x" + u8ConvertedLsb.toString(16).toUpperCase().padStart(2,"0") ;
+            } else {
+                // No of Zero is Even
+                console.log( "u8ConvertedMsb No of Zero is Odd :"+ setBit(u8ConvertedLsb, 7).toString(16).toUpperCase()  );
+                document.getElementById("highByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : 0x" +setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2,"0") ;
+            
+            }
+        }
+
+        function calculateOddParity(u8OddParity) 
+        {
+            u8OddParity ^= (u8OddParity >> 4);
+            u8OddParity ^= (u8OddParity >> 2);
+            u8OddParity ^= (u8OddParity >> 1);
+            return u8OddParity & 1;
+        }
+
+        function setBit(value, bitIndex) {
+            return value | (1 << bitIndex);
+        }
+
+    </script>
+
+</body>
+</html>
+
