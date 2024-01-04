@@ -1,51 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en">Please find attached the design data for the WT6676F daughter board for DER1002. 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnoSwitch3-Pro Constant Voltage Calculation</title>
+    <title>InnoSwitch3-Pro Voltage Calculation and Decoding
+    </title>
 </head>
 <body>
-
-    <h1>InnoSwitch3-Pro Constant Voltage Calculation</h1>
-
-    <form id="valueForm">
-        <label for="inputValue">Enter a value of Constant Voltage (between 3V to 24V):</label>
-        <input type="number" id="inputValue" name="inputValue" min="3" max="24" step="0.1" required>
-        <button type="button" onclick="calculateValue()">Calculate</button>
+    <h1>InnoSwitch3-Pro Voltage Calculation and Decoding</h1>
+    <form id="Write_cv_Form">
+        <h2>Constant Voltage Calculation with odd parity</h2>
+        <label for="inputValue">Enter a value of Constant Voltage in the range of 3 to 24V, with a minimum increment of 0.01V:</label>
+        <input type="number" id="inputValue" name="inputValue" min="3" max="24" step="0.01" required>
+        <button type="button" onclick="calculateValue()">Calculate</button>      
     </form>
-    
     <label id="inputDisplay"></label>
-    <label id="lowByteResult"></label>
     <label id="highByteResult"></label>
+    <label id="lowByteResult"></label>
+   
+
+    <style>
+        .input-container input {
+            text-align: right;
+        }
+    </style>
+    <div id="Read_cv_Form">
+        <div class="form-container">
+            <h2>Decoding Constant Voltage Reading</h2>
+            <div class="input-container">
+                <label for="highByte">Enter the value read by I2C (High byte):</label>
+                <input type="text" id="highByteId" name="highByte" pattern="[0-9A-Fa-f]+" required>
+            </div>
+            <div class="input-container">
+                <label for="lowByte">Enter the value read by I2C (Low byte):</label>
+                <input type="text" id="lowByteId" name="lowByte" pattern="[0-9A-Fa-f]+" required>
+            </div>
+            <button type="button" onclick="cvDecode()">Calculate</button>
+        </div>
+    </div>
+    <label id="decodeDisplay"></label>
 
     <script>
-      
+        // Function to decode Constant Voltage (CV) values
+        function cvDecode() {
+            // Declare variables to store MSB (Most Significant Byte), LSB (Least Significant Byte), and the combined value
+            var msbValue, lsbValue, combinedValue;
+            var decodedValue;
+
+            // Validate the values entered by the user (hexadecimal input)
+            if (validateHexInput(document.getElementById('highByteId').value) && validateHexInput(document.getElementById('lowByteId').value)) {
+                // Combine the high and low bytes into a 16-bit value
+                combinedValue = (parseInt(document.getElementById('highByteId').value, 16) << 8) | parseInt(document.getElementById('lowByteId').value, 16);
+
+                // Extract the MSB (high byte) and LSB (low byte) values
+                msbValue = (combinedValue & 0x7F00) >> 1;
+                lsbValue = (combinedValue & 0x007F);
+
+                // Calculate the decoded value by adding MSB and LSB
+                decodedValue = msbValue + lsbValue;
+
+                // Log the individual values to the console for debugging
+                console.log("High Byte Value: " + msbValue);
+                console.log("Low Byte Value: " + lsbValue);
+                console.log("Combined Value: " + decodedValue);
+
+                // Display the decoded CV voltage with styling in the HTML
+                document.getElementById("decodeDisplay").innerHTML =
+                    "Decoded CV voltage is: <span style='font-weight: bold; color: red;'>" + (decodedValue / 100) + "V</span>";
+            } else {
+                // Display an alert for invalid hexadecimal input
+                alert("輸入無效的十六進制值。請輸入有效的值。");
+            }
+        }
+
+        // Function to validate hexadecimal input
+        function validateHexInput(value) {
+            // Define a regular expression for hexadecimal validation
+            var hexRegex = /^[0-9A-Fa-f]+$/;
+
+            // Check if the input value matches the hexadecimal pattern
+            return hexRegex.test(value);
+        }
+
 
         function calculateValue() {
             // Get the input value
-            var inputValue = parseFloat(document.getElementById("inputValue").value);
-            // Multiply the input value by 100
-            inputValue = parseFloat(inputValue.toFixed(2));
-            var inputValueMultiplied =Math.round(inputValue * 100);
+            var inputValue = parseInt(document.getElementById("inputValue").value * 100); // Convert to integer for better precision
+    
+        
             // Convert to hexadecimal and ensure it has 4 digits
-            var hexValue = inputValueMultiplied.toString(16).toUpperCase().padStart(4, '0');
-
-         
-            if (inputValueMultiplied >= 300 && inputValueMultiplied <= 2400) {
-                   // Display the input value in a label in both decimal and hexadecimal formats
+            var hexValue = inputValue.toString(16).toUpperCase().padStart(4, '0');
+          
+            if (inputValue >= 300 && inputValue <= 2400) {
+                // Display the input value in a label in both decimal and hexadecimal formats
                 document.getElementById("inputDisplay").innerHTML =
-                "Input Value (DEC): " + inputValueMultiplied + "  (10mV/LSB)" +
-                "<br>Input Value Convert to HEX: 0x" + hexValue + "<br>Command Address :0x10";
+                    "Input Value (DEC):<span style='font-weight: bold; color: red;'> " + inputValue + " </span> (10mV/LSB)" +
+                    "<br>Input Value Convert to HEX: 0x " + hexValue + " <br>Command Address :0x10";
 
-                InnoProBase_Encode_Buffer_Parity(inputValueMultiplied);
+                InnoProBase_Encode_Buffer_Parity(inputValue);
                 // Display the results
-               
-               
+
+
             } else {
                 // Display an error message if the input value is outside the valid range
                 document.getElementById("lowByteResult").innerHTML = "";
-                document.getElementById("highByteResult").innerHTML = "Please enter a value between 3 and 24.";
+                document.getElementById("highByteResult").innerHTML = "";
+                document.getElementById("inputDisplay").innerHTML ="<br><span style='font-weight: bold; color: red;'> Please input voltage in the range of 3.00 to 24.00V, with a minimum increment of 0.01V.<br> 請輸入電壓範圍3.00到24.00V,最小單位0.01V </span>"
+                document.getElementById("lowByteId").value="";
+                document.getElementById("highByteId").value="";
+                alert("Please input voltage in the range of 3 to 24V, with a minimum increment of 0.01V.\r 請輸入電壓範圍3到24V,最小單位0.01V");
+
             }
         }
 
@@ -53,48 +117,48 @@
             var u16TempMsb = 0;
             var u8ConvertedMsb = 0;
             var u8ConvertedLsb = 0;
-        
+     
             // Clears Bit 0-6 and Shift the remaining to left by 1
             // The 7th Bit is used for Parity Purposes
             // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x300
             u16TempMsb = (u16Temp & 0xFF80) << 1;
-            console.log( "u16TempMsb:" +  u16TempMsb.toString(16)  );
+            console.log("u16TempMsb:" + u16TempMsb.toString(16));
             // Begin MSB Extraction
             // From 0x300, Returns 0x03
             u8ConvertedMsb = (u16TempMsb & 0xFF00) >> 8;
-            console.log( "u8ConvertedMsb:"+ u8ConvertedMsb.toString(16)   );
+            console.log("u8ConvertedMsb:" + u8ConvertedMsb.toString(16));
             // Check Odd Parity and Fill the MSB buffer
-            if (calculateOddParity(u8ConvertedMsb) ) {
+            if (calculateOddParity(u8ConvertedMsb)) {
                 // No of Zero is Odd
-              console.log( "u8ConvertedMsb No of Zero is Odd :"+ u8ConvertedMsb.toString(16)  );
-              document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : 0x" + u8ConvertedMsb.toString(16).toUpperCase().padStart(2,"0") ;
-
+                console.log("u8ConvertedMsb No of Zero is Odd :" + u8ConvertedMsb.toString(16));
+                document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + u8ConvertedMsb.toString(16).toUpperCase().padStart(2, "0") +"</span>";
+                document.getElementById("highByteId").value= u8ConvertedMsb.toString(16).toUpperCase().padStart(2, "0");
             } else {
                 // No of Zero is Even
-              console.log( "u8ConvertedMsb No of Zero is Odd :"+ setBit(u8ConvertedMsb, 7).toString(16).toUpperCase()  );
-              document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : 0x" + setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2,"0") ;
-            
+                console.log("u8ConvertedMsb No of Zero is Odd :" + setBit(u8ConvertedMsb, 7).toString(16).toUpperCase());
+                document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2, "0")+"</span>";
+                document.getElementById("highByteId").value =  setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2, "0");
             }
             // Clears 7th Bit, This is used for parity purposes
             // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x74
             u8ConvertedLsb = u16Temp & 0x7F;
 
             // Check Odd Parity and Fill the LSB buffer
-            if (calculateOddParity(u8ConvertedLsb) ) {
+            if (calculateOddParity(u8ConvertedLsb)) {
                 // No of Zero is Odd
-             
-                console.log( "u8ConvertedMsb No of Zero is Odd :"+ u8ConvertedLsb.toString(16)  );
-                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : 0x" + u8ConvertedLsb.toString(16).toUpperCase().padStart(2,"0") ;
+                console.log("u8ConvertedMsb No of Zero is Odd :" + u8ConvertedLsb.toString(16).toUpperCase());
+                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + u8ConvertedLsb.toString(16).toUpperCase().padStart(2, "0")+"</span>";
+                document.getElementById("lowByteId").value= u8ConvertedLsb.toString(16).toUpperCase().padStart(2, "0");
             } else {
                 // No of Zero is Even
-                console.log( "u8ConvertedMsb No of Zero is Odd :"+ setBit(u8ConvertedLsb, 7).toString(16).toUpperCase()  );
-                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : 0x" +setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2,"0") ;
-            
+                console.log("u8ConvertedMsb No of Zero is Odd :" + setBit(u8ConvertedLsb, 7).toString(16).toUpperCase());
+                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2, "0")+"</span>";
+                document.getElementById("lowByteId").value=setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2, "0"); 
             }
+
         }
 
-        function calculateOddParity(u8OddParity) 
-        {
+        function calculateOddParity(u8OddParity) {
             u8OddParity ^= (u8OddParity >> 4);
             u8OddParity ^= (u8OddParity >> 2);
             u8OddParity ^= (u8OddParity >> 1);
