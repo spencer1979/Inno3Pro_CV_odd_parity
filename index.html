@@ -246,18 +246,19 @@ function calMaxCurrent() {
                         return u8ConvertedLsb;
                      } else {
                         // No of Zero is Even
+                        // set the bit 7 to 1
                         return setBit(u8ConvertedLsb, 7);
                     }
                 }
 
-
+        // Returns 1 for odd  and 0 for even .
         function calculateOddParity(u8OddParity) {
             u8OddParity ^= (u8OddParity >> 4);
             u8OddParity ^= (u8OddParity >> 2);
             u8OddParity ^= (u8OddParity >> 1);
             return u8OddParity & 1;
         }
-
+        // set the bit 7 to 1
         function setBit(value, bitIndex) {
             return value | (1 << bitIndex);
         }
