@@ -11,8 +11,8 @@
     <form id="Write_cv_Form">
         <h2>Constant Voltage Calculation with odd parity</h2>
         <label for="inputValue">Enter a value of Constant Voltage in the range of 3 to 24V, with a minimum increment of 0.01V:</label>
-        <input type="number" id="inputValue" name="inputValue" min="3" max="24" step="0.01" required>
-        <button type="button" onclick="calculateValue()">Calculate</button>      
+        <input type="number" id="inputValue" name="inputValue" min="1" max="24" step="0.01" required>
+        <button type="button" onclick="cal_cv_with_odd_parity()">Calculate</button>      
     </form>
     <label id="inputDisplay"></label>
     <label id="highByteResult"></label>
@@ -40,7 +40,50 @@
     </div>
     <label id="decodeDisplay"></label>
 
+    <div id="cal_cc_Form">
+        <div class="form-container">
+            <h2>Constant Current Calculation with odd parity.</h2>
+            <!-- 計算Max Current  -->
+            <div class="input-container">
+                <label for="Rs">Enter the current sense resistor value (mOhm):( 32mV/RS(mohm) ) </label>
+                <input type="text" id="rs" name="rs" pattern="[0-9A-Fa-f]+" required>
+            </div>
+            <button type="button" onclick="calMaxCurrent()">Calculate Max Current </button>  <br> <label id="lab_maxCurrent"></label>
+           <!-- 輸入計算後的最大電流, 計算加入odd parity 後 寫入0x98 high byte low byte 值 -->
+            <div class="input-container">
+                <label for="Rs">Enter the current setpoint.(A)</label>
+                <input type="text" id="cc_set_point" name="cc_set_point" pattern="[0-9A-Fa-f]+" required>
+            </div>
+            <button type="button" onclick="cal_cc_with_odd_parity()">Calculate high & low byte value with odd parity  </button> <br>  <label id="lab_cc_display"></label> <br>  <label id="lab_cc_address"></label> 
+            <br> <label id="lab_cc_low_byte"></label>
+            <br> <label id="lab_cc_high_byte"></label>
+        </div>
+    </div>
+   
+
     <script>
+
+function calMaxCurrent() {
+    // 獲取輸入框中的值
+    var rsInput = document.getElementById("rs").value;
+
+    // 將輸入解析為浮點數
+    var rsValue = parseFloat(rsInput);
+
+    // 檢查是否為有效的數字
+    if (isNaN(rsValue) || rsValue <= 0) {
+        // 如果不是有效的數字，顯示警告
+        document.getElementById("lab_maxCurrent").innerText = "請輸入有效的數字";
+    } else {
+        // 計算最大電流
+        var maxCurrent = (32 / 1000) / (rsValue / 1000);
+
+        // 顯示最大電流值並設置cc set point
+        document.getElementById("lab_maxCurrent").innerHTML = '最大電流值為: <span style="color:red;">' + maxCurrent.toFixed(2) + ' A</span>';
+        document.getElementById("cc_set_point").value = maxCurrent.toFixed(2);
+    }
+}
+
         // Function to decode Constant Voltage (CV) values
         function cvDecode() {
             // Declare variables to store MSB (Most Significant Byte), LSB (Least Significant Byte), and the combined value
@@ -81,9 +124,57 @@
             // Check if the input value matches the hexadecimal pattern
             return hexRegex.test(value);
         }
+        //Set Limits
+        function clamp(number, min, max) {
+         return Math.min(Math.max(number, min), max);
+        }
 
+        function cal_cc_with_odd_parity() {
+            var highByte=0 ;
+            var lowByte=0;
+            const full_range_rsense_vol = 32 ; //32mV IS pin 
+            const adc_full_range =128 ;
+            var cc_set_pt_mult=0; 
+            var rs=0;
+            //get current sense resistor 
+            rs= document.getElementById("rs").value
+            console.log("Current sense resistor :" + rs);
+            // Get the input value
+            var cc_read_val = parseFloat(document.getElementById("cc_set_point").value ).toFixed(2); 
+            console.log("cc_set_point:" + cc_set_point);
+            cc_set_pt_mult= parseFloat(  ((adc_full_range * rs) / full_range_rsense_vol) ).toFixed(2);
+            console.log("cc_set_pt_mult:" + cc_set_pt_mult);
+            cc_set_pt=clamp(parseInt(cc_read_val*cc_set_pt_mult) ,25,128) ;
+            console.log("cc_set_pt:" + cc_set_pt);
 
-        function calculateValue() {
+            if (cc_set_pt >= 25 && cc_set_pt <= 128 ) {
+                // Display the input value in a label in both decimal and hexadecimal formats
+                document.getElementById("lab_cc_display").innerHTML =
+                    "<br>Constant Current Set point :<span style='font-weight: bold; color: red;'> " + cc_read_val + " </span>A" ;
+                highByte=encode_odd_parity_msb(cc_set_pt);
+                lowByte=encode_odd_parity_lsb(cc_set_pt);
+                //high byte display 
+                console.log("u8ConvertedMsb No of Zero is Odd :" + highByte.toString(16));
+                document.getElementById("lab_cc_address").innerHTML = "<br>CC Address: <span style='font-weight: bold; color: red;'>0x98</span>";
+                document.getElementById("lab_cc_low_byte").innerHTML = "<br>Low byte: <span style='font-weight: bold; color: red;'> 0x"+ lowByte.toString(16).toUpperCase().padStart(2, "0"); +"</span>";
+                document.getElementById("lab_cc_high_byte").innerHTML = "<br>High byte: <span style='font-weight: bold; color: red;'>0x"+ highByte.toString(16).toUpperCase().padStart(2, "0"); +"</span>";
+        
+
+            } else {
+                // Display an error message if the input value is outside the valid range
+                document.getElementById("lowByteResult").innerHTML = "";
+                document.getElementById("highByteResult").innerHTML = "";
+                document.getElementById("inputDisplay").innerHTML ="<br><span style='font-weight: bold; color: red;'> Please input voltage in the range of 3.00 to 24.00V, with a minimum increment of 0.01V.<br> 請輸入電壓範圍3.00到24.00V,最小單位0.01V </span>"
+                document.getElementById("lowByteId").value="";
+                document.getElementById("highByteId").value="";
+                alert("The constant current setting should be from a minimum of 20% to 100%. The set point you entered is not valid.\r 定電流設置最小20% 至100% ,你輸入的設定點不正確");
+
+            }
+        }
+
+        function cal_cv_with_odd_parity() {
+            var highByte=0;
+            var lowByte=0;
             // Get the input value
             var inputValue = parseInt(document.getElementById("inputValue").value * 100); // Convert to integer for better precision
     
@@ -91,15 +182,21 @@
             // Convert to hexadecimal and ensure it has 4 digits
             var hexValue = inputValue.toString(16).toUpperCase().padStart(4, '0');
           
-            if (inputValue >= 300 && inputValue <= 2400) {
+            if (inputValue >= 100 && inputValue <= 2400) {
                 // Display the input value in a label in both decimal and hexadecimal formats
                 document.getElementById("inputDisplay").innerHTML =
                     "Input Value (DEC):<span style='font-weight: bold; color: red;'> " + inputValue + " </span> (10mV/LSB)" +
                     "<br>Input Value Convert to HEX: 0x " + hexValue + " <br>Command Address :0x10";
-
-                InnoProBase_Encode_Buffer_Parity(inputValue);
-                // Display the results
-
+                highByte=encode_odd_parity_msb(inputValue);
+                lowByte=encode_odd_parity_lsb(inputValue);
+                //high byte display 
+                console.log("u8ConvertedMsb No of Zero is Odd :" + highByte.toString(16));
+                document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + highByte.toString(16).toUpperCase().padStart(2, "0") +"</span>";
+                document.getElementById("highByteId").value= highByte.toString(16).toUpperCase().padStart(2, "0");
+               //low byte display 
+                console.log("u8ConvertedMsb No of Zero is Odd :" + lowByte.toString(16).toUpperCase());
+                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + lowByte.toString(16).toUpperCase().padStart(2, "0")+"</span>";
+                document.getElementById("lowByteId").value= lowByte.toString(16).toUpperCase().padStart(2, "0");
 
             } else {
                 // Display an error message if the input value is outside the valid range
@@ -113,50 +210,46 @@
             }
         }
 
-        function InnoProBase_Encode_Buffer_Parity(u16Temp) {
+        
+        function encode_odd_parity_msb( u16Temp )
+        {       
             var u16TempMsb = 0;
             var u8ConvertedMsb = 0;
-            var u8ConvertedLsb = 0;
-     
             // Clears Bit 0-6 and Shift the remaining to left by 1
             // The 7th Bit is used for Parity Purposes
             // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x300
-            u16TempMsb = (u16Temp & 0xFF80) << 1;
+            u16TempMsb=(u16Temp& 0xFF80 ) <<1;
             console.log("u16TempMsb:" + u16TempMsb.toString(16));
             // Begin MSB Extraction
             // From 0x300, Returns 0x03
             u8ConvertedMsb = (u16TempMsb & 0xFF00) >> 8;
             console.log("u8ConvertedMsb:" + u8ConvertedMsb.toString(16));
-            // Check Odd Parity and Fill the MSB buffer
             if (calculateOddParity(u8ConvertedMsb)) {
-                // No of Zero is Odd
-                console.log("u8ConvertedMsb No of Zero is Odd :" + u8ConvertedMsb.toString(16));
-                document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + u8ConvertedMsb.toString(16).toUpperCase().padStart(2, "0") +"</span>";
-                document.getElementById("highByteId").value= u8ConvertedMsb.toString(16).toUpperCase().padStart(2, "0");
+               return u8ConvertedMsb;
             } else {
                 // No of Zero is Even
-                console.log("u8ConvertedMsb No of Zero is Odd :" + setBit(u8ConvertedMsb, 7).toString(16).toUpperCase());
-                document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2, "0")+"</span>";
-                document.getElementById("highByteId").value =  setBit(u8ConvertedMsb, 7).toString(16).toUpperCase().padStart(2, "0");
-            }
-            // Clears 7th Bit, This is used for parity purposes
-            // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x74
-            u8ConvertedLsb = u16Temp & 0x7F;
-
-            // Check Odd Parity and Fill the LSB buffer
-            if (calculateOddParity(u8ConvertedLsb)) {
-                // No of Zero is Odd
-                console.log("u8ConvertedMsb No of Zero is Odd :" + u8ConvertedLsb.toString(16).toUpperCase());
-                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + u8ConvertedLsb.toString(16).toUpperCase().padStart(2, "0")+"</span>";
-                document.getElementById("lowByteId").value= u8ConvertedLsb.toString(16).toUpperCase().padStart(2, "0");
-            } else {
-                // No of Zero is Even
-                console.log("u8ConvertedMsb No of Zero is Odd :" + setBit(u8ConvertedLsb, 7).toString(16).toUpperCase());
-                document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2, "0")+"</span>";
-                document.getElementById("lowByteId").value=setBit(u8ConvertedLsb, 7).toString(16).toUpperCase().padStart(2, "0"); 
+                return setBit(u8ConvertedMsb, 7);
             }
 
         }
+
+        function encode_odd_parity_lsb( u16Temp )
+                {       
+                    var u16TempMsb = 0;
+                    var u8ConvertedLsb = 0;
+                    // Clears 7th Bit, This is used for parity purposes
+                    // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x74
+                    u8ConvertedLsb = u16Temp & 0x7F;
+                    // Check Odd Parity
+                    if (calculateOddParity(u8ConvertedLsb)) {
+                         // No of Zero is Odd
+                        return u8ConvertedLsb;
+                     } else {
+                        // No of Zero is Even
+                        return setBit(u8ConvertedLsb, 7);
+                    }
+                }
+
 
         function calculateOddParity(u8OddParity) {
             u8OddParity ^= (u8OddParity >> 4);
