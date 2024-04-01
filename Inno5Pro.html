@@ -55,6 +55,7 @@
                 <input type="text" id="cc_set_point" name="cc_set_point" pattern="[0-9A-Fa-f]+" required>
             </div>
             <button type="button" onclick="cal_cc_with_odd_parity()">Calculate high & low byte value with odd parity  </button> <br>  <label id="lab_cc_display"></label> <br>  <label id="lab_cc_address"></label> 
+        
             <br> <label id="lab_cc_low_byte"></label>
             <br> <label id="lab_cc_high_byte"></label>
         </div>
@@ -153,10 +154,11 @@
         cc_set_pt=cc_read_val*cc_set_pt_mult  ;
         console.log("cc_set_pt:" + cc_set_pt);
 
-        if (cc_set_pt >= adc_min_range && cc_set_pt <= adc_full_range ) {
+        if (cc_set_pt.toFixed(0) >= adc_min_range && cc_set_pt.toFixed(0) <= adc_full_range ) {
             // Display the input value in a label in both decimal and hexadecimal formats
+           
             document.getElementById("lab_cc_display").innerHTML =
-                "<br>Constant Current Set point :<span style='font-weight: bold; color: red;'> " + cc_read_val + " </span>A" ;
+                "<br>Constant Current Set point :<span style='font-weight: bold; color: red;'> " + cc_read_val + " </span>A (LSB:<span style='font-weight: bold; color: red;'>"+ cc_set_pt.toFixed(0) +"</span>)" ;
             highByte=encode_odd_parity_msb(cc_set_pt);
             lowByte=encode_odd_parity_lsb(cc_set_pt);
             //high byte display 
@@ -170,7 +172,7 @@
             // Display an error message if the input value is outside the valid range
             if ( cc_set_pt < adc_min_range )
             {
-  
+           
             document.getElementById("lab_cc_address").innerHTML = "";
             document.getElementById("lab_cc_low_byte").innerHTML = "";
             document.getElementById("lab_cc_high_byte").innerHTML = "";
@@ -180,7 +182,8 @@
             
         }
             if ( cc_set_pt > adc_full_range )
-            {
+            {      
+         
             document.getElementById("lab_cc_address").innerHTML = "";
             document.getElementById("lab_cc_low_byte").innerHTML = "";
             document.getElementById("lab_cc_high_byte").innerHTML = "";
