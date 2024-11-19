@@ -135,6 +135,9 @@ function calMaxCurrent() {
             // Check if the input value matches the hexadecimal pattern
             return hexRegex.test(value);
         }
+
+       
+
         //Set Limits
         function clamp(number, min, max) {
          return Math.min(Math.max(number, min), max);
@@ -228,6 +231,9 @@ function calMaxCurrent() {
             console.clear();
             // Get the input value
             var inputValue = parseInt(document.getElementById("inputDecimal").value ); // Convert to integer for better precision
+
+            if ( validateNumericInput(inputValue) ) 
+            {
             // Convert to hexadecimal and ensure it has 4 digits
             console.log("輸入資料 DEC :" + inputValue + ", HEX:0x"+ inputValue.toString(16).padStart(4, '0') + "\r\n");
             highByte=encode_odd_parity_msb(inputValue);
@@ -239,7 +245,20 @@ function calMaxCurrent() {
             document.getElementById("lab_odd_low_byte").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + lowByte.toString(16).toUpperCase().padStart(2, "0")+"</span>";
             document.getElementById("lab_odd_low_byte_result").value= lowByte.toString(16).toUpperCase().padStart(2, "0");
             }
-    
+        else {
+                // Display an alert for invalid hexadecimal input
+                alert("請輸入整數!");
+            }
+            
+         }
+        // Function to validate numeric input
+        function validateNumericInput(value) 
+        {
+         // Define a regular expression for numeric validation
+         var numericRegex = /^[0-9]+$/;
+        // Check if the input value matches the numeric pattern
+        return numericRegex.test(value);
+        }
         function encode_odd_parity_msb( u16Temp )
         {   
             var u16TempMsb = 0;
