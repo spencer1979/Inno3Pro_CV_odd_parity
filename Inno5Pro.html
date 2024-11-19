@@ -86,8 +86,8 @@
             maxCurrent = (32 / 1000) / (rsValue / 1000);
             minCurrent = (maxCurrent * 29) / 192 ;
             // 顯示最大電流值並設置cc set point
-            document.getElementById("lab_maxCurrent").innerHTML = 'Max over current set point is (最大可設電流保護點): <span style="color:red;">' + maxCurrent.toFixed(2) + ' A</span>';
-            document.getElementById("lab_minCurrent").innerHTML = 'Min over current set point is (最小可設電流保護點): <span style="color:red;">' + minCurrent.toFixed(2) + ' A</span>';
+            document.getElementById("lab_maxCurrent").innerHTML = 'Max constant current set point: (最大可設電流保護點): <span style="color:red;">' + maxCurrent.toFixed(2) + ' A</span>';
+            document.getElementById("lab_minCurrent").innerHTML = 'Min constant current set point: (最小可設電流保護點): <span style="color:red;">' + minCurrent.toFixed(2) + ' A</span>';
             document.getElementById("cc_set_point").value = maxCurrent.toFixed(2);
         }
     }
@@ -117,7 +117,7 @@
 
             // Display the decoded CV voltage with styling in the HTML
             document.getElementById("decodeDisplay").innerHTML =
-                "Decoded CV voltage is: <span style='font-weight: bold; color: red;'>" + (decodedValue / 100) + "V</span>";
+                "Decoded CV voltage: <span style='font-weight: bold; color: red;'>" + (decodedValue / 100) + "V</span>";
         } else {
             // Display an alert for invalid hexadecimal input
             alert("Invalid hexadecimal value entered. Please input a valid value. 輸入無效的十六進制值。請輸入有效的值。");
@@ -212,11 +212,11 @@
             lowByte=encode_odd_parity_lsb(inputValue);
             //high byte display 
             console.log("u8ConvertedMsb No of Zero is Odd :" + highByte.toString(16));
-            document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + highByte.toString(16).toUpperCase().padStart(2, "0") +"</span>";
+            document.getElementById("highByteResult").innerHTML = "<br>High Byte with Odd parity HEX data: <span style='font-weight: bold; color: red;'>0x" + highByte.toString(16).toUpperCase().padStart(2, "0") +"</span>";
             document.getElementById("highByteId").value= highByte.toString(16).toUpperCase().padStart(2, "0");
             //low byte display 
             console.log("u8ConvertedMsb No of Zero is Odd :" + lowByte.toString(16).toUpperCase());
-            document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + lowByte.toString(16).toUpperCase().padStart(2, "0")+"</span>";
+            document.getElementById("lowByteResult").innerHTML = "<br>Low Byte with Odd parity HEX data:<span style='font-weight: bold; color: red;'>0x" + lowByte.toString(16).toUpperCase().padStart(2, "0")+"</span>";
             document.getElementById("lowByteId").value= lowByte.toString(16).toUpperCase().padStart(2, "0");
 
         } else {

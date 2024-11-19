@@ -59,7 +59,17 @@
             <br> <label id="lab_cc_high_byte"></label>
         </div>
     </div>
-   
+
+    <div id="Odd_Parity_Form">
+        <div class="form-container">
+            <h2>Odd parity Calculation.</h2>
+            <!-- 計算整數  -->
+            <div class="input-container">
+                <label for="Rs">Please enter the decimal value.</label>
+                <input type="text" id="inputDecimal" name="inputDecimal" pattern="[0-9A-Fa-f]+" required>
+            </div>
+            <button type="button" onclick="cal_decimal_with_oddparity()">Calculate </button> <br> <label id="lab_odd_high_byte"> </label> <br> <label id="lab_odd_high_byte_result"> </label> <br> <label id="lab_odd_low_byte"> </label> <br> <label id="lab_odd_low_byte_result"> </label>
+    </div>
 
     <script>
 
@@ -103,6 +113,7 @@ function calMaxCurrent() {
                 decodedValue = msbValue + lsbValue;
 
                 // Log the individual values to the console for debugging
+                console.log("High Byte Value: " + combinedValue.toString(16).toUpperCase());
                 console.log("High Byte Value: " + msbValue);
                 console.log("Low Byte Value: " + lsbValue);
                 console.log("Combined Value: " + decodedValue);
@@ -210,25 +221,49 @@ function calMaxCurrent() {
             }
         }
 
-        
+        function cal_decimal_with_oddparity()
+        {
+            var highByte=0;
+            var lowByte=0;
+            console.clear();
+            // Get the input value
+            var inputValue = parseInt(document.getElementById("inputDecimal").value ); // Convert to integer for better precision
+            // Convert to hexadecimal and ensure it has 4 digits
+            console.log("輸入資料 DEC :" + inputValue + ", HEX:0x"+ inputValue.toString(16).padStart(4, '0') + "\r\n");
+            highByte=encode_odd_parity_msb(inputValue);
+            lowByte=encode_odd_parity_lsb(inputValue);
+            //high byte display 
+            document.getElementById("lab_odd_high_byte").innerHTML = "<br>High Byte with Odd parity HEX data is : <span style='font-weight: bold; color: red;'>0x" + highByte.toString(16).toUpperCase().padStart(2, "0") +"</span>";
+            document.getElementById("lab_odd_high_byte_result").value= highByte.toString(16).toUpperCase().padStart(2, "0");
+            //low byte display 
+            document.getElementById("lab_odd_low_byte").innerHTML = "<br>Low Byte with Odd parity HEX data is :<span style='font-weight: bold; color: red;'>0x" + lowByte.toString(16).toUpperCase().padStart(2, "0")+"</span>";
+            document.getElementById("lab_odd_low_byte_result").value= lowByte.toString(16).toUpperCase().padStart(2, "0");
+            }
+    
         function encode_odd_parity_msb( u16Temp )
-        {       
+        {   
             var u16TempMsb = 0;
             var u8ConvertedMsb = 0;
             // Clears Bit 0-6 and Shift the remaining to left by 1
             // The 7th Bit is used for Parity Purposes
             // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x300
             u16TempMsb=(u16Temp& 0xFF80 ) <<1;
-            console.log("u16TempMsb:" + u16TempMsb.toString(16));
+            console.log("數值:"  + (u16Temp& 0xFF80 ).toString(2).padStart(16, '0') + " 清除位元 0-6 並將剩餘位元左移 1 後 : "+u16TempMsb.toString(2).padStart(16, '0')+"\r\n");
+           
             // Begin MSB Extraction
             // From 0x300, Returns 0x03
             u8ConvertedMsb = (u16TempMsb & 0xFF00) >> 8;
-            console.log("u8ConvertedMsb:" + u8ConvertedMsb.toString(16));
-            if (calculateOddParity(u8ConvertedMsb)) {
-               return u8ConvertedMsb;
+            console.log("擷取高位元資料 HEX:0x" + u8ConvertedMsb.toString(16).padStart(2, '0') + " DEC:" + u8ConvertedMsb +"\r\n");
+            if (calculateOddParity(u8ConvertedMsb)== 1 ) {
+                console.log("高位元1的數量為奇數 ,不須更動.值為: HEX-->0x"+ u8ConvertedMsb.toString(16).padStart(2, '0') +" \r\n");
+                return u8ConvertedMsb;
+
             } else {
                 // No of Zero is Even
-                return setBit(u8ConvertedMsb, 7);
+                
+                u8ConvertedMsb= setBit(u8ConvertedMsb, 7);
+                console.log("高位元1的數量為偶數 , 第七位需設1.值為: HEX-->0x "+ u8ConvertedMsb.toString(16).padStart(2, '0')+"\r\n" );
+                return u8ConvertedMsb
             }
 
         }
@@ -240,13 +275,18 @@ function calMaxCurrent() {
                     // Clears 7th Bit, This is used for parity purposes
                     // Example for 5V: 01F4 Hex (500 in decimal), Returns 0x74
                     u8ConvertedLsb = u16Temp & 0x7F;
+                    console.log("擷取低位元資料 HEX:0x" + u8ConvertedLsb.toString(16).padStart(2, '0') + " DEC:" + u8ConvertedLsb +"\r\n");
                     // Check Odd Parity
                     if (calculateOddParity(u8ConvertedLsb)) {
+                        console.log("低位元1的數量為奇數 ,不須更動.值為: HEX-->0x"+ u8ConvertedLsb.toString(16).padStart(2, '0') +" \r\n");
                          // No of Zero is Odd
                         return u8ConvertedLsb;
                      } else {
                         // No of Zero is Even
                         // set the bit 7 to 1
+                        
+                        u8ConvertedLsb= setBit(u8ConvertedLsb, 7);
+                        console.log("低位元1的數量為奇數 , 第七位需設1.值為: HEX-->0x "+ u8ConvertedLsb.toString(16).padStart(2, '0') +" \r\n");
                         return setBit(u8ConvertedLsb, 7);
                     }
                 }
